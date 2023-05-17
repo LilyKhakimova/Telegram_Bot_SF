@@ -1,35 +1,36 @@
-import json
 import requests
-from config import *
+import json
+from config import values
 
 
-class ExchangeException(Exception):
+class APIException(Exception):
     pass
 
-
-class Exchange:
+class CryptoConverter:
     @staticmethod
-    def get_price(quote: str, base: str, amount: str):
-        if quote == base:
-            raise ExchangeException(
-                f'Нельзя перевести одинаковые валюты {base}.')
+    def convert(base: str, quote: str, amount: str):
+
+        if base == quote:
+            raise APIException(f'Не удалось перевести одинаковые валюты: {base}-{quote}')
 
         try:
-            quote_ticker = keys[quote]
+            base_ticker = values[base]
         except KeyError:
-            raise ExchangeException(f'Не смог обработать валюту {quote}')
+            raise APIException(f'Не удалось обработать валюту {base}')
 
         try:
-            base_ticker = keys[base]
+            quote_ticker = values[quote]
         except KeyError:
-            raise ExchangeException(f'Не смог обработать валюту {base}')
+            raise APIException(f'Не удалось обработать валюту {quote}')
 
         try:
-            amount = int(amount)
+            amount = float(amount)
         except ValueError:
-            raise ExchangeException(f'Не смог обработать количество {amount}')
+            raise APIException(f'Не удалось обработать количество {amount}. Введите целое число')
 
-        r = requests.get(
-            f'https://min-api.cryptocompare.com/data/price?fsym={base_ticker}&tsyms={quote_ticker}')
-        total_base = float(json.loads(r.content)[keys[quote]])
-        return total_base
+        r = requests.get(f'https://min-api.cryptocompare.com/data/price?fsym={base_ticker}&tsyms={quote_ticker}')
+        result = json.loads(r.content)[values[quote]]
+        result *= amount
+
+        return result
+    
